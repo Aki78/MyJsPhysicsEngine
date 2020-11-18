@@ -57,10 +57,31 @@ function CircleEntity(x, y, radius, type, restitution, deceleration) {
     var mx=0, my=0;
 
     if(ny==r.y){my=-overlap;}else if(ny==r.y+r.h){my=overlap;}else if(nx==r.x){mx=-overlap}else if(nx==r.x+r.w){mx=overlap}
-        else{mx=-this.velocity.x;my=-this.velocity.y;}
+        else{mx=-this.velocity.x; my=-this.velocity.y;}
 
     this.move(mx,my);
     if(mx){this.velocity = this.velocity.mul(-1*this.restitution, 1);}
     if(my){this.velocity = this.velocity.mul(1,-1*this.restitution);}
   }
+
+  this.collidedWithLine = function (line){ //Circle vs Line
+    var v0 = new Vec(line.x0 - this.x + this.velocity.x, line.y0 - this.y + this.velocity.y);
+    var v1 = this.velocity; var v2 = new Vec(line.x1 - linex0, line.y1 - line.y0);
+    var cv1v2 = v1.cross(v2);
+    var t1 = v0.cross(v1)/cv1v2; var t2 = v0.cross(v2)/cv1v2;
+    var crossed = (0 <= t1 && t1 <= 1) && (0 <=t2 && t2 <= 1);
+
+    if(crossed){
+      this.move(-this.velocity.x, -this.velocity.y);
+      var dot0 = this.velocity.dot(line.norm); //inner product of norm and velocity
+      var vec0 = line.norm.mul(-2*dot0);
+      this.velocity = vec0.add(this.velocity);
+      this.velocity = this.velocity.mul(line.restitution * this.restitution);
+    }
+  }
+
+
+
+
+
 }
