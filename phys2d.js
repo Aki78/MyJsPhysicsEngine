@@ -148,7 +148,7 @@ function CircleEntity(x, y, radius, type, restitution, deceleration) {
     }
   };
 
-  this.collideWithCircle = function (peer) {
+  this.collidedWithCircle = function (peer) {
     //Circle vs Circle interaction
     var d2 = Math.power(peer.x - this.x, 2) + Math.pow(peer.y - this.y, 2);
     if (d2 >= Math.pow(this.radius + peer.radius, 2)) {
@@ -217,5 +217,46 @@ function Engine(x, y, width, height, gravityX, gravityY) {
 
   this.step = function (elapsed) {
     var gravity = this.gravity.mul(elapsed, elapsed);
+    var entities = this.entities;
+    entities.forEach(function (e) {
+      if (e.type == BodyDynamic) {
+        var accel = e.accel.mul(elapsed, elapsed);
+        e.velocity = e.velocity.add(gravity);
+        e.velocity = e.velocity.add(accel);
+        e.velocity = e.velocity.mul(e.deceleration);
+        e.move(e.velocity.x, e.velocity.y);
+      }
+    });
+
+    //erase objects outside of the boundaries.
+    this.entities = entities.filter(function (e) {
+      return (
+        this.worldX <= e.x &&
+        e.x <= this.worldX + this.worldW &&
+        this.worldY <= e.y &&
+        e.y <= this.worldY + this.worldH
+      );
+    }, this);
+
+    for (var i = 0; i < entities.length - 1; i++) {
+      for (var j = i + 1; j < entities.length; j++) {
+        var e0 = entities[i];
+        var e1 = entities[j];
+        if (e0.type == BodyStatic && e1.type == BodyStatic) {
+          continue;
+        }
+        if (e0.shape == ShapeCircle && e1.shape == ShapeCircle) {
+          e0.collidedWithCircle(e1);
+        } else if (e0.shape == ShapeCircle && e1.shape == ShapeLine) {
+          e0.collidedWithLine(e1);
+        } else if (e0.shape == ShapeLine && e1.shape == ShapeCircle) {
+          e1.collidedWithLine(e0);
+        } else if (e0.shape == ShapeCircle && e1.shape == ShapeRectangle) {
+          e0.collidedWithRect(e1);
+        } else if (e0.shape == ShapeRectangle && e1.shape == ShapeCircle) {
+          e1.collidedWithRect(e0);
+        }
+      }
+    }
   };
 }
